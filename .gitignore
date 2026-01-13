@@ -1,0 +1,19 @@
+# --- Universal Ignores (Works for both Backend & Frontend) ---
+
+# Ignore ALL node_modules folders anywhere in the project
+**/node_modules/
+node_modules/
+
+# Ignore ALL .env files anywhere (Secrets)
+.env
+**/.env
+.env.local
+.env.*.local
+
+# --- Mac/Windows System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Build/Dist Folders ---
+build/
+dist/
