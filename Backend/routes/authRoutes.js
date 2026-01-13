@@ -3,57 +3,67 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
 
-// --- REGISTER ---
+// HARDCODED SECRET
+const JWT_SECRET = process.env.JWT_SECRET || "cloudberrySecretKey123";
+
+// REGISTER
 router.post('/register', async (req, res) => {
+  // 1. EXTRACT 'name' HERE
+  const { name, email, password } = req.body; 
+
   try {
-    const { email, password } = req.body;
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: 'User already exists' });
 
+    // 2. SAVE 'name' TO DATABASE
+    user = new User({ name, email, password }); 
+    
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    user = new User({ email, password: hashedPassword });
+    user.password = await bcrypt.hash(password, salt);
     await user.save();
 
-    // INCLUDE ROLE IN TOKEN
-    const token = jwt.sign({ userId: user._id, role: user.role }, 'secretKey123', { expiresIn: '1h' });
-
-    res.status(201).json({ token, userId: user._id, role: user.role });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    const payload = { user: { id: user.id } };
+    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+      if (err) throw err;
+      // 3. SEND 'name' BACK TO FRONTEND
+      res.json({ token, role: user.role, name: user.name }); 
+    });
+  } catch (err) {
+    console.error(err); // Good to see errors in terminal
+    res.status(500).send('Server error');
   }
 });
 
-// --- LOGIN ---
+// LOGIN
 router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid Credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
 
-    // INCLUDE ROLE IN TOKEN
-    const token = jwt.sign({ userId: user._id, role: user.role }, 'secretKey123', { expiresIn: '1h' });
-
-    res.json({ token, userId: user._id, role: user.role });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    const payload = { user: { id: user.id } };
+    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+      if (err) throw err;
+      // 4. SEND 'name' BACK HERE TOO
+      res.json({ token, role: user.role, name: user.name }); 
+    });
+  } catch (err) {
+    res.status(500).send('Server error');
   }
 });
 
-// --- CHEAT CODE: MAKE ADMIN ---
-// Usage: Send POST request to http://localhost:5000/api/auth/make-admin with {"email": "your_email"}
-router.post('/make-admin', async (req, res) => {
+// GET USER
+router.get('/user', auth, async (req, res) => {
   try {
-    const { email } = req.body;
-    const user = await User.findOneAndUpdate({ email }, { role: 'admin' }, { new: true });
-    res.json({ message: `${email} is now an Admin!`, user });
-  } catch (error) {
-    res.status(500).json({ message: 'Error' });
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).send('Server Error');
   }
 });
 

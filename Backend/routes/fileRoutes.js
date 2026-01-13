@@ -1,97 +1,160 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
-const { Readable } = require("stream"); // <--- Native Node tool (No install needed)
-const File = require("../models/File");
-const auth = require("../middleware/auth");
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
+const File = require('../models/File');
+const User = require('../models/User'); // <--- Needed for invites
+const auth = require('../middleware/auth');
 
-// --- 1. CONFIGURATION (PASTE KEYS HERE) ---
-cloudinary.config({
-  cloud_name: process.env.cloud_name,
-  api_key: process.env.api_key,
-  api_secret: process.env.api_secret,
+// --- CONFIG: Multer Storage (Cloudinary) ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'mini-drive',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf', 'docx'],
+  },
 });
+const upload = multer({ storage: storage });
 
-// --- 2. MEMORY STORAGE (The Safest Way) ---
-const upload = multer({ storage: multer.memoryStorage() });
-
-// --- 3. UPLOAD ROUTE (Direct Stream) ---
-router.post("/upload", auth, upload.single("file"), async (req, res) => {
+// --- ROUTE 1: Upload a File ---
+router.post('/upload', auth, upload.single('file'), async (req, res) => {
   try {
-    console.log("📸 Request received...");
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    // --- THE MAGIC: Convert Buffer to Stream (Native Way) ---
-    const streamUpload = (buffer) => {
-      return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "mini-drive" },
-          (error, result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(error);
-            }
-          }
-        );
-        // Create a readable stream from the buffer
-        const bufferStream = new Readable();
-        bufferStream.push(buffer);
-        bufferStream.push(null); // Signals the end of the stream
-        bufferStream.pipe(stream);
-      });
-    };
-
-    console.log("🚀 Sending to Cloudinary...");
-    const result = await streamUpload(req.file.buffer);
-    console.log("✅ Cloudinary Success:", result.secure_url);
-
-    // Save to DB
     const newFile = new File({
-      user: req.user.userId,
+      user: req.user.id,
       name: req.file.originalname,
-      url: result.secure_url,
+      url: req.file.path,
       type: req.file.mimetype,
-      size: req.file.size || 0,
+      size: req.file.size
     });
 
-    await newFile.save();
-    console.log("✅ Saved to DB");
-    res.json({ file: newFile });
-  } catch (error) {
-    console.error("🔥 Upload Failed:", error);
+    const savedFile = await newFile.save();
+    res.json(savedFile);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 });
 
-// --- GET FILES ---
-router.get("/", auth, async (req, res) => {
+// --- ROUTE 2: Get My Files ---
+router.get('/', auth, async (req, res) => {
   try {
-    let query = {};
-    if (req.user.role !== "admin") query = { user: req.user.userId };
-    const files = await File.find(query);
+    // Find files where user is Owner OR user is in the "SharedWith" list
+    const files = await File.find({
+      $or: [
+        { user: req.user.id },
+        { sharedWith: req.user.id }
+      ]
+    }).sort({ date: -1 });
+    
     res.json(files);
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({ message: "Server Error" });
   }
 });
 
-// --- DELETE ---
-router.delete("/:id", auth, async (req, res) => {
+// --- ROUTE 3: Delete a File ---
+router.delete('/:id', auth, async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
-    if (!file) return res.status(404).json({ message: "Not Found" });
-    if (file.user.toString() !== req.user.userId && req.user.role !== "admin") {
+    if (!file) return res.status(404).json({ message: "File not found" });
+
+    // Ensure only the owner can delete
+    if (file.user.toString() !== req.user.id) {
       return res.status(401).json({ message: "Not authorized" });
     }
+
     await file.deleteOne();
     res.json({ message: "File deleted" });
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// --- ROUTE 4: Admin Get ALL Files ---
+router.get('/admin/all', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: "Access Denied: Admins Only" });
+    }
+    const allFiles = await File.find().populate('user', 'email');
+    res.json(allFiles);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching admin files" });
+  }
+});
+
+// --- ROUTE 5: Toggle Link Sharing (Public/Private) ---
+router.put("/toggle-share/:id", auth, async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ message: "File not found" });
+    
+    if (file.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    file.isPublic = !file.isPublic;
+    await file.save();
+
+    res.json({ 
+      isPublic: file.isPublic, 
+      message: file.isPublic ? "Link sharing is ON 🟢" : "Link sharing is OFF 🔒" 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// --- ROUTE 6: Public View Route (No Login Required) ---
+router.get("/shared/:id", async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file || !file.isPublic) {
+      return res.status(403).json({ message: "This file is private or does not exist." });
+    }
+    res.json(file);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// --- ROUTE 7: SHARE WITH EMAIL (The Missing Piece!) ---
+router.post("/share-email/:id", auth, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const file = await File.findById(req.params.id);
+
+    if (!file) return res.status(404).json({ message: "File not found" });
+    
+    // Check ownership
+    if (file.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: "Not authorized to share this file" });
+    }
+
+    // Find the user to share with
+    const targetUser = await User.findOne({ email });
+    if (!targetUser) {
+      // THIS IS THE ERROR YOU WERE LIKELY GETTING
+      return res.status(404).json({ message: `User ${email} not found. Have they registered?` });
+    }
+
+    // Initialize sharedWith array if it doesn't exist
+    if (!file.sharedWith) file.sharedWith = [];
+    
+    // Add only if not already shared
+    if (!file.sharedWith.includes(targetUser._id)) {
+      file.sharedWith.push(targetUser._id);
+      await file.save();
+    }
+
+    res.json({ message: `Access granted to ${targetUser.name || email} ✨` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error during sharing" });
   }
 });
 
