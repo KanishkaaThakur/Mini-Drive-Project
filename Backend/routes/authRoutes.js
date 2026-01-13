@@ -18,8 +18,8 @@ router.post('/register', async (req, res) => {
     if (user) return res.status(400).json({ message: 'User already exists' });
 
     // 2. SAVE 'name' TO DATABASE
-    user = new User({ name, email, password }); 
-    
+   user = new User({ name, email, password });
+
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
     await user.save();

@@ -88,7 +88,7 @@ function App() {
 
   const handleUpload = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!file) { alert("Please select a file first! 📁"); return; }
+    if (!file) { alert("Please select a file first!🌚"); return; }
     
     const formData = new FormData();
     formData.append('file', file);
@@ -102,7 +102,7 @@ function App() {
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
         fetchFiles();
-        alert("Upload Successful! ✨");
+        alert("Upload Successful!🌚");
       }
     } catch (err) { alert("Server error"); }
   };
@@ -174,7 +174,7 @@ function App() {
             <div className="file-placeholder" style={{fontSize: '3rem'}}>📄</div>
           )}
           <h3 style={{ marginTop: '20px' }}>{sharedFile.name}</h3>
-          <a href={sharedFile.url} className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', textDecoration: 'none' }}>Download 📥</a>
+          <a href={sharedFile.url} className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', textDecoration: 'none' }}>Download 🌚</a>
           <br/>
           <button onClick={() => { setSharedFile(null); window.history.pushState({}, document.title, "/"); }} className="btn-logout" style={{marginTop: '20px'}}>Go Home</button>
         </div>
@@ -182,7 +182,7 @@ function App() {
     );
   }
 
-  if (errorMsg) return <div className="app-container"><h1 className="title">🔒 {errorMsg}</h1></div>;
+  if (errorMsg) return <div className="app-container"><h1 className="title">🌚 {errorMsg}</h1></div>;
 
   if (!token) {
     return (

@@ -56,23 +56,40 @@ router.get('/', auth, async (req, res) => {
 });
 
 // --- ROUTE 3: Delete a File ---
+// --- ROUTE 3: Delete a File ---
+// --- ROUTE 3: Delete a File (Crash-Proof Version) ---
 router.delete('/:id', auth, async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
     if (!file) return res.status(404).json({ message: "File not found" });
 
-    // Ensure only the owner can delete
-    if (file.user.toString() !== req.user.id) {
+    // GET THE USER TRYING TO DELETE
+    const requestor = await User.findById(req.user.id);
+
+    // --- CRASH FIX: HANDLE GHOST FILES ---
+    // If file has no owner (ghost), allow Admin to delete it immediately.
+    if (!file.user) {
+        if (requestor.role === 'admin') {
+            await file.deleteOne();
+            return res.json({ message: "Ghost file deleted" });
+        } else {
+            return res.status(401).json({ message: "Only Admins can delete ghost files" });
+        }
+    }
+    // -------------------------------------
+
+    // NORMAL CHECK: Is it the Owner? OR Is it an Admin?
+    if (file.user.toString() !== req.user.id && requestor.role !== 'admin') {
       return res.status(401).json({ message: "Not authorized" });
     }
 
     await file.deleteOne();
     res.json({ message: "File deleted" });
   } catch (err) {
+    console.error("Delete Error:", err); // Prints error to terminal instead of hiding it
     res.status(500).json({ message: "Server Error" });
   }
 });
-
 // --- ROUTE 4: Admin Get ALL Files ---
 router.get('/admin/all', auth, async (req, res) => {
   try {
