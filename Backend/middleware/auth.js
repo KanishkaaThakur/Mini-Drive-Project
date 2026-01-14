@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // HARDCODED SECRET for stability
-const JWT_SECRET = process.env.JWT_SECRET || "cloudberrySecretKey123";
+const JWT_SECRET = process.env.JWT_SECRET ;
 
 module.exports = async function(req, res, next) {
   const token = req.header('x-auth-token');
