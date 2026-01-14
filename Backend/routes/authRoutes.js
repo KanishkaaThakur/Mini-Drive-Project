@@ -67,4 +67,23 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
+// --- MAGIC FIX ROUTE (Delete this later!) ---
+// This finds your broken user and forces the name to "Admin"
+router.get('/fix-admin', async (req, res) => {
+  try {
+    // We look for the email shown in your screenshot: "adminn@gmail.com"
+    const user = await User.findOne({ email: "adminn@gmail.com" });
+    
+    if (!user) return res.send("User not found! Did you delete them?");
+    
+    user.name = "Admin";   // 1. Give them a name
+    user.role = "admin";   // 2. Make sure they are an admin
+    await user.save();     // 3. Save it to the cloud database
+    
+    res.send("✅ SUCCESS! Your admin user is fixed. Go log in now.");
+  } catch (err) {
+    res.send("Error: " + err.message);
+  }
+});
+
 module.exports = router;
