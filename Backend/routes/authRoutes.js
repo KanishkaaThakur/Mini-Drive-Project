@@ -5,82 +5,139 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
-// HARDCODED SECRET
-const JWT_SECRET = process.env.JWT_SECRET || "cloudberrySecretKey123";
+// Force Secret for Render
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_local_dev";
 
-// REGISTER
+// ==========================================
+// 1. REGISTER USER (The fixed version!)
+// ==========================================
 router.post('/register', async (req, res) => {
-  // 1. EXTRACT 'name' HERE
-  const { name, email, password } = req.body; 
+  const { name, email, password } = req.body;
 
   try {
     let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: 'User already exists' });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
 
-    // 2. SAVE 'name' TO DATABASE
-   user = new User({ name, email, password });
+    user = new User({
+      name,      // Ensure name is saved
+      email,
+      password
+    });
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
+
     await user.save();
 
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      // 3. SEND 'name' BACK TO FRONTEND
-      res.json({ token, role: user.role, name: user.name }); 
-    });
+    // Create Token
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role
+      }
+    };
+
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: 360000 },
+      (err, token) => {
+        if (err) throw err;
+        // 🔥 FIX: Send the name back immediately after registering
+        res.json({ 
+          token, 
+          user: {
+            id: user.id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role 
+          } 
+        });
+      }
+    );
   } catch (err) {
-    console.error(err); // Good to see errors in terminal
+    console.error(err.message);
     res.status(500).send('Server error');
   }
 });
 
-// LOGIN
+// ==========================================
+// 2. LOGIN USER (The fixed version!)
+// ==========================================
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid Credentials' });
+    let user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid Credentials' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid Credentials' });
+    }
 
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      // 4. SEND 'name' BACK HERE TOO
-      res.json({ token, role: user.role, name: user.name }); 
-    });
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role
+      }
+    };
+
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: 360000 },
+      (err, token) => {
+        if (err) throw err;
+        // 🔥 FIX: Send the name back on login too
+        res.json({ 
+          token, 
+          user: {
+            id: user.id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role 
+          } 
+        });
+      }
+    );
   } catch (err) {
+    console.error(err.message);
     res.status(500).send('Server error');
   }
 });
 
-// GET USER
+// ==========================================
+// 3. GET USER INFO
+// ==========================================
 router.get('/user', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
   } catch (err) {
+    console.error(err.message);
     res.status(500).send('Server Error');
   }
 });
 
-// --- MAGIC FIX ROUTE (Delete this later!) ---
-// This finds your broken user and forces the name to "Admin"
+// ==========================================
+// 4. MAGIC FIX ROUTE (To fix your Admin)
+// ==========================================
 router.get('/fix-admin', async (req, res) => {
   try {
-    // We look for the email shown in your screenshot: "adminn@gmail.com"
+    // Finds "adminn@gmail.com" and fixes the name
     const user = await User.findOne({ email: "adminn@gmail.com" });
+    if (!user) return res.send("Admin user not found.");
     
-    if (!user) return res.send("User not found! Did you delete them?");
+    user.name = "Admin";
+    user.role = "admin";
+    await user.save();
     
-    user.name = "Admin";   // 1. Give them a name
-    user.role = "admin";   // 2. Make sure they are an admin
-    await user.save();     // 3. Save it to the cloud database
-    
-    res.send("✅ SUCCESS! Your admin user is fixed. Go log in now.");
+    res.send("✅ Admin Fixed! Log out and log back in.");
   } catch (err) {
     res.send("Error: " + err.message);
   }
