@@ -36,7 +36,7 @@ button {
 /* Delete Button (Soft Red) */
 .btn-danger {
   background-color: #fff;
-  color: #ff8fa3;
+  color: #f9a4e7;
   border: 1px solid #ffccd5;
   padding: 5px 12px;
   border-radius: 20px;
@@ -44,13 +44,13 @@ button {
 }
 
 .btn-danger:hover {
-  background-color: #ff8fa3;
+  background-color: #f3b5f3;
   color: white;
 }
 
 /* Logout Button */
 .btn-logout {
-  background-color: #ffb7b2;
+  background-color: #e9a3de;
   color: white;
   padding: 8px 16px;
   border-radius: 20px;

@@ -65,6 +65,7 @@ function App() {
         localStorage.setItem('name', data.name); 
         localStorage.setItem('email', email);    
         setToken(data.token);
+        window.location.reload(); // Force refresh to show avatar
       } else { alert(data.message); }
     } catch (err) { alert("Server error"); }
   };
@@ -162,10 +163,7 @@ function App() {
   if (sharedFile) {
     return (
       <div className="app-container" style={{ textAlign: 'center', marginTop: '50px', fontFamily: "'Quicksand', sans-serif" }}>
-        {/* FONT INJECTION */}
-        <style>
-          {`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}
-        </style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}</style>
         <h1 className="title">☁️ Shared Memory</h1>
         <div className="auth-card" style={{ maxWidth: '600px', margin: '0 auto', fontFamily: "'Quicksand', sans-serif" }}>
           {sharedFile.type && sharedFile.type.startsWith('image/') ? (
@@ -173,7 +171,7 @@ function App() {
           ) : (
             <div className="file-placeholder" style={{fontSize: '3rem'}}>📄</div>
           )}
-          <h3 style={{ marginTop: '20px' }}>{sharedFile.name}</h3>
+          <h3 style={{ marginTop: '20px' }}> Share🫐</h3>
           <a href={sharedFile.url} className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', textDecoration: 'none' }}>Download 🌚</a>
           <br/>
           <button onClick={() => { setSharedFile(null); window.history.pushState({}, document.title, "/"); }} className="btn-logout" style={{marginTop: '20px'}}>Go Home</button>
@@ -187,10 +185,7 @@ function App() {
   if (!token) {
     return (
       <div className="app-container" style={{fontFamily: "'Quicksand', sans-serif"}}>
-        {/* FONT INJECTION */}
-        <style>
-          {`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}
-        </style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}</style>
         <div className="auth-card">
           <h1 className="title" style={{fontFamily: "'Quicksand', sans-serif"}}>🫐 Cloudberry</h1>
           <p style={{marginBottom: '20px', color: '#888'}}>Your digital Archive</p>
@@ -212,10 +207,7 @@ function App() {
 
   return (
     <div className="app-container" style={{fontFamily: "'Quicksand', sans-serif"}}>
-      {/* FONT INJECTION */}
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}
-      </style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap');`}</style>
 
       <div className="dashboard-header">
         <h1 className="title" style={{fontFamily: "'Quicksand', sans-serif"}}>{isAdminView ? "🫐 Cloudblock" : "🫐 Cloudstore"}</h1>
@@ -234,7 +226,7 @@ function App() {
         <>
           <div className="upload-box" style={{ cursor: 'pointer', flexDirection: 'column' }} onClick={() => fileInputRef.current.click()}>
             <input type="file" ref={fileInputRef} onChange={e => setFile(e.target.files[0])} style={{ display: 'none' }} />
-            <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#845ec2' }}>{file ? `✅ Selected: ${file.name}` : "🫧 Tap to choose a File"}</p>
+            <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#845ec2' }}>{file ? `🌚Selected: ${file.name}` : "🫧 Tap to choose a File"}</p>
             <button type="button" onClick={(e) => { e.stopPropagation(); handleUpload(e); }} disabled={!file} className="btn-primary" style={{fontFamily: "'Quicksand', sans-serif"}}>Upload </button>
           </div>
 
@@ -258,7 +250,7 @@ function App() {
       )}
 
       {/* --- CLOUDBERRY THEMED SHARE MODAL --- */}
-      {sharingFile && (
+      { sharingFile && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
           backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
@@ -266,13 +258,13 @@ function App() {
           <div style={{
             background: 'white', padding: '25px', borderRadius: '20px', width: '500px',
             boxShadow: '0 10px 40px rgba(132, 94, 194, 0.2)', textAlign: 'left', 
-            fontFamily: "'Quicksand', sans-serif" // <--- THE FONT FIX
+            fontFamily: "'Quicksand', sans-serif" 
           }}>
             <h3 style={{ margin: '0 0 20px 0', color: '#845ec2', fontWeight: '700', fontSize: '1.5rem' }}>
-              Share "{sharingFile.name}"
+              Share🫐
             </h3>
             
-            {/* 1. INPUT BOX (Add people) */}
+            {/* 1. INPUT BOX */}
             <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
               <input 
                 type="email" placeholder="Add people and groups" value={inviteEmail}
@@ -293,24 +285,22 @@ function App() {
               {/* --- OWNER ROW --- */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {/* Round Avatar with Emoji */}
+                  
+                  {/* Round Avatar with INLINED LOGIC (NO ERROR POSSIBLE) */}
                   <div style={{ 
-                    width: '45px', height: '45px', borderRadius: '50%', 
-                    backgroundColor: '#fbeaff', // Very light pink/purple
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem', 
-                    border: '2px solid #ad5cbe' // Cloudberry pink border
-                  }}>
-                    {(localStorage.getItem('name') && localStorage.getItem('name') !== 'undefined') 
-                      ? localStorage.getItem('name')[0].toUpperCase() 
-                      : "🫟" 
-                    }
-                  </div>
+  width: '45px', height: '45px', borderRadius: '50%', 
+  backgroundColor: '#fbeaff', 
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  fontSize: '1.5rem', 
+  border: '2px solid #ad5cbe' 
+}}>
+  🫐
+</div>
                   
                   {/* Text Stack */}
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: '700', color: '#4b4b4b', fontSize: '1rem' }}>
-                      {localStorage.getItem('name') || 'User'} <span style={{color: '#888', fontWeight: '400'}}>(you)</span>
+                      {localStorage.getItem('name') || 'User'} <span style={{color: '#8a898a', fontWeight: '400'}}>(you)</span>
                     </span>
                     <span style={{ fontSize: '0.85rem', color: '#845ec2' }}>
                       {localStorage.getItem('email')}
