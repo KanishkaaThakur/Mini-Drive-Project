@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URI || "http://localhost:5000";
@@ -10,12 +9,23 @@ const AdminPanel = () => {
   // Fetch All Files on Load
   const fetchFiles = async () => {
     try {
+      console.log("Fetching admin files...");
       const res = await fetch(`${API_BASE}/api/files/admin/all`, {
         headers: { 'x-auth-token': token }
       });
+      
       const result = await res.json();
-      if (res.ok) setFiles(result);
-    } catch (err) { console.error("Error loading files", err); }
+      
+      if (!res.ok) {
+        alert(`ADMIN ERROR: ${result.message || "Unknown Error"}`);
+        return;
+      }
+      
+      setFiles(result);
+    } catch (err) { 
+      console.error("Error loading files", err); 
+      alert("NETWORK ERROR: Check console for details");
+    }
   };
 
   // Delete File
@@ -32,6 +42,7 @@ const AdminPanel = () => {
 
   useEffect(() => {
     fetchFiles();
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -41,7 +52,8 @@ const AdminPanel = () => {
       <div style={{ display: 'grid', gap: '15px' }}>
         {files.length === 0 ? (
           <p style={{ fontSize: '1.2rem', color: '#888', marginTop: '30px' }}>
-            Squeaky Clean!🌚
+            Squeaky Clean!🫐 <br/>
+            <small>(Or maybe the server is blocking you?)</small>
           </p>
         ) : (
           files.map((file) => (
@@ -51,7 +63,7 @@ const AdminPanel = () => {
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)', textAlign: 'left'
             }}>
               
-              {/* 1. VISIBLE THUMBNAIL (The Fix) */}
+              {/* 1. THUMBNAIL */}
               <div style={{ 
                 width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', 
                 backgroundColor: '#f3e5f5', flexShrink: 0, 

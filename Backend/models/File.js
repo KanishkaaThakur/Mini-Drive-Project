@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const FileSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
+    ref: 'user', // Matches the lowercase export in User.js
     required: true
   },
   name: {
@@ -21,7 +21,6 @@ const FileSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  // --- NEW FIELD: This holds the list of invited emails ---
   sharedWith: [{
     type: String
   }],

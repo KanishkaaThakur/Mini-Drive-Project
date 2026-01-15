@@ -91,7 +91,7 @@ function App() {
 
   const handleUpload = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!file) { alert("Please select a file first!🌚"); return; }
+    if (!file) { alert("Please select a file first!🫐"); return; }
     
     const formData = new FormData();
     formData.append('file', file);
@@ -105,13 +105,13 @@ function App() {
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
         fetchFiles();
-        alert("Upload Successful!🌚");
+        alert("Upload Successful!🫐");
       }
     } catch (err) { alert("Server error"); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this memory?")) return;
+    if (!window.confirm("Delete this memory? 🫐")) return;
     try {
       const res = await fetch(`${API_BASE}/api/files/${id}`, { 
         method: 'DELETE',
@@ -135,19 +135,19 @@ function App() {
       const data = await res.json();
       
       if (res.ok) {
-        alert(`✨ ${data.message} ✨`); 
+        alert(` ${data.message} 🫐`); 
         setInviteEmail('');
         if(data.file) {
             setSharingFile(data.file); 
         }
       } else {
-        alert(data.message || "Invite failed");
+        alert(data.message || "Invite failed 🫐");
       }
-    } catch (err) { alert("Invite failed"); }
+    } catch (err) { alert("Invite failed 🫐"); }
   };
 
   const handleRemoveAccess = async (emailToRemove) => {
-    if(!window.confirm(`Are you sure you want to remove access for ${emailToRemove}?`)) return;
+    if(!window.confirm(`Are you sure you want to remove access for ${emailToRemove}? 🫐`)) return;
 
     try {
       const res = await fetch(`${API_BASE}/api/files/remove-share/${sharingFile._id}`, {
@@ -163,9 +163,9 @@ function App() {
       if (res.ok) {
         setSharingFile(data.file); 
         // --- UPDATED: Added Sparkles here ---
-        alert(`✨ Access removed for ${emailToRemove} ✨`);
+        alert(`Access removed for ${emailToRemove} 🫐`);
       } else {
-        alert(data.message || "Failed to remove");
+        alert(data.message || "Failed to remove 🫐");
       }
     } catch (err) { alert("Server error"); }
   };
@@ -184,13 +184,13 @@ function App() {
         setSharingFile({ ...sharingFile, isPublic: data.isPublic });
         fetchFiles();
       }
-    } catch (err) { alert("Error updating access"); }
+    } catch (err) { alert("Error updating access 🫐"); }
   };
 
   const copyLink = () => {
     const link = `${window.location.origin}?shared=${sharingFile._id}`;
     navigator.clipboard.writeText(link);
-    alert("Link copied! 📋");
+    alert("Link copied!🫐");
   };
 
   const getDisplayName = () => {
@@ -214,7 +214,7 @@ function App() {
             <div className="file-placeholder" style={{fontSize: '3rem'}}>📄</div>
           )}
           <h3 style={{ marginTop: '20px' }}> Share🫐</h3>
-          <a href={sharedFile.url} className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', textDecoration: 'none' }}>Download 🌚</a>
+          <a href={sharedFile.url} className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', textDecoration: 'none' }}>Download 🫐</a>
           <br/>
           <button onClick={() => { setSharedFile(null); window.history.pushState({}, document.title, "/"); }} className="btn-logout" style={{marginTop: '20px'}}>Go Home</button>
         </div>
@@ -222,7 +222,7 @@ function App() {
     );
   }
 
-  if (errorMsg) return <div className="app-container"><h1 className="title">🌚 {errorMsg}</h1></div>;
+  if (errorMsg) return <div className="app-container"><h1 className="title">🫐 {errorMsg}</h1></div>;
 
   if (!token) {
     return (
@@ -241,7 +241,7 @@ function App() {
               {isRegistering ? "Join the Club" : "Enter"}
             </button>
           </form>
-          <p onClick={() => setIsRegistering(!isRegistering)} className="link-text">{isRegistering ? "Already have an Archive? Login" : "New here? Create account"}</p>
+          <p onClick={() => setIsRegistering(!isRegistering)} className="link-text">{isRegistering ? "Already have an Archive? Login 🫐" : "New here? Create account "}</p>
         </div>
       </div>
     );
@@ -268,7 +268,7 @@ function App() {
         <>
           <div className="upload-box" style={{ cursor: 'pointer', flexDirection: 'column' }} onClick={() => fileInputRef.current.click()}>
             <input type="file" ref={fileInputRef} onChange={e => setFile(e.target.files[0])} style={{ display: 'none' }} />
-            <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#845ec2' }}>{file ? `🌚Selected: ${file.name}` : "🫧 Tap to choose a File"}</p>
+            <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#845ec2' }}>{file ? `🫐Selected: ${file.name}` : "🫧 Tap to choose a File"}</p>
             <button type="button" onClick={(e) => { e.stopPropagation(); handleUpload(e); }} disabled={!file} className="btn-primary" style={{fontFamily: "'Quicksand', sans-serif"}}>Upload </button>
           </div>
 
@@ -278,7 +278,7 @@ function App() {
                 {f.type && f.type.startsWith('image/') ? (
                   <img src={f.url} alt="memory" className="file-img" />
                 ) : (
-                  <div className="file-placeholder">📄</div>
+                  <div className="file-placeholder">🫐</div>
                 )}
                 <p className="file-name">{f.name}</p>
                 <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
@@ -369,7 +369,7 @@ function App() {
                                 background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem',
                                 transition: '0.2s'
                             }}
-                            title="Remove Access"
+                            title="Remove Access 🫐"
                         >
                             🚫
                         </button>

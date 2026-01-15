@@ -4,7 +4,7 @@ const auth = require('../middleware/auth');
 const File = require('../models/File');
 const User = require('../models/User'); 
 
-// 1. UPLOAD FILE
+// 1. UPLOAD SETUP
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
@@ -18,6 +18,28 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
+// ==========================================
+// 🚨 CRITICAL FIX: ADMIN ROUTE MUST BE FIRST
+// ==========================================
+router.get('/admin/all', auth, async (req, res) => {
+  try {
+    // 1. Check if user is admin
+    const user = await User.findById(req.user.id);
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // 2. Fetch ALL files
+    const files = await File.find().sort({ date: -1 }).populate('user', 'name email');
+    res.json(files);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+// ==========================================
+
+// 2. UPLOAD FILE
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
   try {
     const newFile = new File({
@@ -34,10 +56,9 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-// 2. GET ALL FILES (Yours + Shared with you)
+// 3. GET MY FILES (Standard User)
 router.get('/', auth, async (req, res) => {
   try {
-    // Find files where owner is YOU OR sharedWith contains YOUR EMAIL
     const files = await File.find({
       $or: [
         { user: req.user.id },
@@ -52,7 +73,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// 3. SHARE WITH EMAIL
+// 4. SHARE WITH EMAIL
 router.post('/share-email/:id', auth, async (req, res) => {
   const { email } = req.body;
   try {
@@ -75,19 +96,17 @@ router.post('/share-email/:id', auth, async (req, res) => {
   }
 });
 
-// 4. REMOVE ACCESS (NEW ENDPOINT)
+// 5. REMOVE ACCESS
 router.put('/remove-share/:id', auth, async (req, res) => {
   const { email } = req.body;
   try {
     let file = await File.findById(req.params.id);
     if (!file) return res.status(404).json({ message: 'File not found' });
 
-    // Only owner can remove access
     if (file.user.toString() !== req.user.id) {
       return res.status(401).json({ message: 'Not authorized' });
     }
 
-    // Filter out the email to remove it
     file.sharedWith = file.sharedWith.filter(e => e !== email);
     await file.save();
 
@@ -98,7 +117,7 @@ router.put('/remove-share/:id', auth, async (req, res) => {
   }
 });
 
-// 5. TOGGLE PUBLIC/PRIVATE
+// 6. TOGGLE PUBLIC/PRIVATE
 router.put('/toggle-share/:id', auth, async (req, res) => {
   try {
     let file = await File.findById(req.params.id);
@@ -117,7 +136,7 @@ router.put('/toggle-share/:id', auth, async (req, res) => {
   }
 });
 
-// 6. GET SHARED FILE (Public Link)
+// 7. GET SHARED FILE (Public Link)
 router.get('/shared/:id', async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
@@ -132,14 +151,18 @@ router.get('/shared/:id', async (req, res) => {
   }
 });
 
-// 7. DELETE FILE
+// 8. DELETE FILE
 router.delete('/:id', auth, async (req, res) => {
   try {
     let file = await File.findById(req.params.id);
     if (!file) return res.status(404).json({ message: 'File not found' });
 
+    // Allow Owner OR Admin
     if (file.user.toString() !== req.user.id) {
-      return res.status(401).json({ message: 'Not authorized' });
+        const requestUser = await User.findById(req.user.id);
+        if(requestUser.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
     }
 
     await File.findByIdAndDelete(req.params.id);
