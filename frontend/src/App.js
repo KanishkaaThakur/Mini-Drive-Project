@@ -241,7 +241,7 @@ function App() {
               {isRegistering ? "Join the Club" : "Enter"}
             </button>
           </form>
-          <p onClick={() => setIsRegistering(!isRegistering)} className="link-text">{isRegistering ? "Already have an Archive? Login 🫐" : "New here? Create account "}</p>
+          <p onClick={() => setIsRegistering(!isRegistering)} className="link-text">{isRegistering ? "Already have an Archive? Login " : "New here? Create account "}</p>
         </div>
       </div>
     );
