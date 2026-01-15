@@ -62,7 +62,6 @@ function App() {
       
       if (res.ok) {
         localStorage.setItem('token', data.token);
-        // We now correctly read user info from 'data.user'
         localStorage.setItem('role', data.user.role); 
         localStorage.setItem('name', data.user.name); 
         localStorage.setItem('email', data.user.email);    
@@ -134,9 +133,41 @@ function App() {
         body: JSON.stringify({ email: inviteEmail })
       });
       const data = await res.json();
-      alert(data.message); 
-      if (res.ok) setInviteEmail(''); 
+      
+      if (res.ok) {
+        alert(`✨ ${data.message} ✨`); 
+        setInviteEmail('');
+        if(data.file) {
+            setSharingFile(data.file); 
+        }
+      } else {
+        alert(data.message || "Invite failed");
+      }
     } catch (err) { alert("Invite failed"); }
+  };
+
+  const handleRemoveAccess = async (emailToRemove) => {
+    if(!window.confirm(`Are you sure you want to remove access for ${emailToRemove}?`)) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/files/remove-share/${sharingFile._id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-auth-token': token 
+        },
+        body: JSON.stringify({ email: emailToRemove })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSharingFile(data.file); 
+        // --- UPDATED: Added Sparkles here ---
+        alert(`✨ Access removed for ${emailToRemove} ✨`);
+      } else {
+        alert(data.message || "Failed to remove");
+      }
+    } catch (err) { alert("Server error"); }
   };
 
   const toggleAccess = async (newStatus) => {
@@ -162,7 +193,6 @@ function App() {
     alert("Link copied! 📋");
   };
 
-  // --- HELPER FOR NAME DISPLAY ---
   const getDisplayName = () => {
     const storedName = localStorage.getItem('name');
     if (!storedName || storedName === 'undefined' || storedName === 'null') {
@@ -224,9 +254,7 @@ function App() {
       <div className="dashboard-header">
         <h1 className="title" style={{fontFamily: "'Quicksand', sans-serif"}}>{isAdminView ? "🫐 Cloudblock" : "🫐 Cloudstore"}</h1>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          {/* --- FIX: Display "User" if name is undefined --- */}
           <span style={{color: '#666', fontWeight: 'bold'}}>Hi, {getDisplayName()}!</span>
-          
           {localStorage.getItem('role') === 'admin' && (
             <button onClick={() => setIsAdminView(!isAdminView)} className="btn-primary">
               {isAdminView ? "My Files" : "Admin Panel"}
@@ -272,7 +300,8 @@ function App() {
           <div style={{
             background: 'white', padding: '25px', borderRadius: '20px', width: '500px',
             boxShadow: '0 10px 40px rgba(132, 94, 194, 0.2)', textAlign: 'left', 
-            fontFamily: "'Quicksand', sans-serif" 
+            fontFamily: "'Quicksand', sans-serif",
+            maxHeight: '80vh', overflowY: 'auto'
           }}>
             <h3 style={{ margin: '0 0 20px 0', color: '#845ec2', fontWeight: '700', fontSize: '1.5rem' }}>
               Share🫐
@@ -299,32 +328,55 @@ function App() {
               {/* --- OWNER ROW --- */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  
-                  {/* Round Avatar */}
                   <div style={{ 
-                    width: '45px', height: '45px', borderRadius: '50%', 
-                    backgroundColor: '#fbeaff', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem', 
+                    width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#fbeaff', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', 
                     border: '2px solid #ad5cbe' 
-                  }}>
-                    🫐
-                  </div>
-                  
-                  {/* Text Stack */}
+                  }}> 🫐 </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: '700', color: '#4b4b4b', fontSize: '1rem' }}>
                       {getDisplayName()} <span style={{color: '#8a898a', fontWeight: '400'}}>(you)</span>
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: '#845ec2' }}>
-                      {localStorage.getItem('email')}
-                    </span>
+                    <span style={{ fontSize: '0.85rem', color: '#845ec2' }}>Owner</span>
                   </div>
                 </div>
-                
-                {/* Right Side Label */}
                 <span style={{ color: '#b0a8b9', fontSize: '0.85rem', fontWeight: '600' }}>Owner</span>
               </div>
+
+              {/* --- SHARED WITH LIST --- */}
+              {sharingFile.sharedWith && sharingFile.sharedWith.map((email, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid #fcf6ff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ 
+                        width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#f8eaf4', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', 
+                        color: '#794bb9'
+                    }}> 🫐 </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '700', color: '#4b4b4b', fontSize: '1rem' }}>
+                        {email}
+                        </span>
+                        <span style={{ fontSize: '0.85rem', color: '#845ec2' }}>Guest</span>
+                    </div>
+                    </div>
+                    
+                    {/* --- REMOVE BUTTON --- */}
+                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                        <span style={{ color: '#b0a8b9', fontSize: '0.85rem', fontWeight: '600' }}>Viewer</span>
+                        <button 
+                            onClick={() => handleRemoveAccess(email)} 
+                            style={{ 
+                                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem',
+                                transition: '0.2s'
+                            }}
+                            title="Remove Access"
+                        >
+                            🚫
+                        </button>
+                    </div>
+                </div>
+              ))}
+
             </div>
 
             {/* 3. GENERAL ACCESS SECTION */}
