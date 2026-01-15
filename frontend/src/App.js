@@ -59,14 +59,17 @@ function App() {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
+      
       if (res.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('name', data.name); 
-        localStorage.setItem('email', email);    
+        // We now correctly read user info from 'data.user'
+        localStorage.setItem('role', data.user.role); 
+        localStorage.setItem('name', data.user.name); 
+        localStorage.setItem('email', data.user.email);    
         setToken(data.token);
-        window.location.reload(); // Force refresh to show avatar
+        window.location.reload(); 
       } else { alert(data.message); }
+      
     } catch (err) { alert("Server error"); }
   };
 
@@ -159,6 +162,15 @@ function App() {
     alert("Link copied! 📋");
   };
 
+  // --- HELPER FOR NAME DISPLAY ---
+  const getDisplayName = () => {
+    const storedName = localStorage.getItem('name');
+    if (!storedName || storedName === 'undefined' || storedName === 'null') {
+      return 'User';
+    }
+    return storedName;
+  };
+
   // --- VIEWS ---
   if (sharedFile) {
     return (
@@ -212,7 +224,9 @@ function App() {
       <div className="dashboard-header">
         <h1 className="title" style={{fontFamily: "'Quicksand', sans-serif"}}>{isAdminView ? "🫐 Cloudblock" : "🫐 Cloudstore"}</h1>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <span style={{color: '#666', fontWeight: 'bold'}}>Hi, {localStorage.getItem('name') || 'Friend'}!</span>
+          {/* --- FIX: Display "User" if name is undefined --- */}
+          <span style={{color: '#666', fontWeight: 'bold'}}>Hi, {getDisplayName()}!</span>
+          
           {localStorage.getItem('role') === 'admin' && (
             <button onClick={() => setIsAdminView(!isAdminView)} className="btn-primary">
               {isAdminView ? "My Files" : "Admin Panel"}
@@ -286,21 +300,21 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   
-                  {/* Round Avatar with INLINED LOGIC (NO ERROR POSSIBLE) */}
+                  {/* Round Avatar */}
                   <div style={{ 
-  width: '45px', height: '45px', borderRadius: '50%', 
-  backgroundColor: '#fbeaff', 
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontSize: '1.5rem', 
-  border: '2px solid #ad5cbe' 
-}}>
-  🫐
-</div>
+                    width: '45px', height: '45px', borderRadius: '50%', 
+                    backgroundColor: '#fbeaff', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.5rem', 
+                    border: '2px solid #ad5cbe' 
+                  }}>
+                    🫐
+                  </div>
                   
                   {/* Text Stack */}
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: '700', color: '#4b4b4b', fontSize: '1rem' }}>
-                      {localStorage.getItem('name') || 'User'} <span style={{color: '#8a898a', fontWeight: '400'}}>(you)</span>
+                      {getDisplayName()} <span style={{color: '#8a898a', fontWeight: '400'}}>(you)</span>
                     </span>
                     <span style={{ fontSize: '0.85rem', color: '#845ec2' }}>
                       {localStorage.getItem('email')}

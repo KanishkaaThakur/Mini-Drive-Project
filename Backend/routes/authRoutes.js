@@ -7,7 +7,7 @@ const auth = require('../middleware/auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-// 1. REGISTER (FORCED ADMIN VERSION)
+// 1. REGISTER (Now defaults to "user" - NO Admin access by default)
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password,
-      role: "admin" // <--- 🚨 THIS FORCES YOU TO BE ADMIN 🚨
+      role: "user" // <--- CHANGED: New users are now normal users
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -28,10 +28,11 @@ router.post('/register', async (req, res) => {
     await user.save();
 
     // Create Token
-    const payload = { user: { id: user.id, role: user.role } };
+    const payload = { user: { id: user.id, role: user.role, name: user.name, email: user.email } };
 
     jwt.sign(payload, JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
       if (err) throw err;
+      // Send user object so frontend can save it
       res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
     });
   } catch (err) {
@@ -40,7 +41,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 2. LOGIN (Standard)
+// 2. LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
